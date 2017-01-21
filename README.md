@@ -58,7 +58,8 @@ RDBMS access is based on the Play JPQ support built in the Model class, which me
 
 All the model classes defined in the app/models directory is available for scripting. JS actions simply call the rich API of Play models to interact to DBs. 
 
-Here are some of the most useful API methods with Models:
+Here are some of the most useful API methods with Models. For more usage reference please see [Play 1.4 JPA reference](https://www.playframework.com/documentation/1.4.x/jpa)
+
         
         public static long count(Class<? extends GenericModel> modelClass, String query, Object... params)
         public static List<T>  findAll(Class<T> modelClass)
