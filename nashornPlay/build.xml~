@@ -29,7 +29,7 @@
                 <include name="**/play.static"/>
             </fileset>
         </copy>
-        <jar destfile="lib/nashornPlay.jar" basedir="tmp/classes">
+        <jar destfile="lib/play-nashornPlay.jar" basedir="tmp/classes">
             <manifest>
                 <section name="Play-module">
                     <attribute name="Specification-Title" value="nashornPlay"/>
@@ -41,7 +41,7 @@
 
     <target name="compile" depends="check">
         <mkdir dir="tmp/classes" />
-        <javac srcdir="src" destdir="tmp/classes" target="1.8" source="1.8" debug="true">
+        <javac srcdir="src" destdir="tmp/classes" target="1.5" debug="true">
             <classpath refid="project.classpath" />
         </javac>
     </target>

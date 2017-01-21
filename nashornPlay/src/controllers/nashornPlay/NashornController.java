@@ -194,18 +194,25 @@ public class NashornController extends cn.bran.play.JapidController {
 			} else if (r instanceof File) {
 				renderBinary((File) r);
 			} else if (r instanceof String) {
-				renderText(r);
+				renderJSON(r);
 			} else if (r instanceof Number) {
-				renderText(r);
+				renderJSON(r);
 			} else if (r instanceof java.util.Date) {
-				renderText(((java.util.Date)r).getTime());
+				renderJSON(((java.util.Date)r).getTime());
 			} else if (r instanceof java.sql.Date) {
-				renderText(((java.sql.Date)r).getTime());
+				renderJSON(((java.sql.Date)r).getTime());
 			} else if (r instanceof Undefined || r == null) {
-				renderText("");
+				renderJSON("");
 			} else if (r instanceof ScriptObjectMirror) {
-				// interpret it as Json
-				throw new RenderJackson(r);
+				ScriptObjectMirror som = (ScriptObjectMirror) r;
+				String className = som.getClassName();
+				if ("Date".equals(className)) {
+					Double timestampLocalTime = (Double) som.callMember("getTime");
+					throw new RenderJackson(timestampLocalTime.longValue());
+				}
+				else {
+					throw new RenderJackson(r);
+				}
 			} else if (r instanceof Model) {
 				throw new RenderJackson(r);
 			} else if (r instanceof Collection) {
