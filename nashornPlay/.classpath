@@ -4,7 +4,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/Users/ran/projects/play/framework/play-1.4.x-bran-1.0.6.jar" sourcepath="/Users/ran/projects/play/framework/src"/>
 	<classpathentry kind="lib" path="/Users/ran/projects/nashornPlay/lib/japid-0.9.6.2.jar"/>
-	<classpathentry kind="lib" path="/Users/ran/projects/nashornPlay/lib/japidplay-0.9.6.2.jar"/>
+	<classpathentry kind="lib" path="/Users/ran/projects/nashornPlay/lib/japidplay-0.9.6.2.jar" sourcepath="/Japid"/>
 	<classpathentry kind="lib" path="/Users/ran/projects/nashornPlay/lib/javaparser-1.0.8.jar" sourcepath="/Users/ran/.ivy2/cache/com.google.code.javaparser/javaparser/sources/javaparser-1.0.8-sources.jar"/>
 	<classpathentry kind="lib" path="/Users/ran/projects/nashornPlay/lib/nashorn-commonjs-modules-1.0.5.jar" sourcepath="/Users/ran/.ivy2/cache/com.coveo/nashorn-commonjs-modules/sources/nashorn-commonjs-modules-1.0.5-sources.jar"/>
 	<classpathentry kind="lib" path="/Users/ran/projects/play/framework/lib/activation-1.1.1.jar"/>

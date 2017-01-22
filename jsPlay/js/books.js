@@ -109,7 +109,9 @@ var books = function() {
 		 */
 		jpa2: function(fromRow, maxResults) {
 			// the find return a query which can be set limit the returned data
-			var query = JPA.find(Book.class, "select title, author.name from Book");
+			var query = Book.find("select title, author.name from Book", []);
+			// the above is equivalent to:
+			//			var query = JPA.find(Book.class, "select title, author.name from Book");
 			return query.from(fromRow).fetch(maxResults);
 		},
 		
@@ -125,6 +127,15 @@ var books = function() {
 //			return new Date()
 //			return 1;
 			return "hello";
+		},
+		
+		/**
+		 * let's render a value in Japid template. 
+		 * the template is "japidroot/japidviews/js/books/japid.html"
+		 */
+		japid: function() {
+			var book = books.getBookById(new java.lang.Long(1))
+			return renderJapid(book) 
 		},
 		
 		/**

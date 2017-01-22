@@ -41,6 +41,7 @@ import nashornplay.etc.NashornTool;
 import nashornplay.etc.NashornTool.FunctionInfo;
 import nashornplay.etc.RenderJackson;
 import nashornplay.etc.RenderJapid;
+import play.Logger;
 import play.Play;
 import play.db.jpa.Model;
 import play.exceptions.CompilationException;
@@ -56,16 +57,23 @@ public class NashornController extends cn.bran.play.JapidController {
 	private static boolean shouldCoerceArg = Boolean
 			.parseBoolean(Play.configuration.getProperty("jscontroller.coerce.args", "false"));
 
-	static final String PLAY_HEADERS_JS = "/nashornplay/etc/playHeaders.js"; // resource path
-	static final String MODEL_HEADERS_JS = jsRoot + "/etc/modelHeaders.js"; // file system path in the running application
-	// private static final String JAVA_IMPORTS = "var RenderText =
-	// Java.type(\"play.mvc.results.RenderText\");" +
-	// // "var OK = Java.type(\"play.mvc.results.OK\");" + // class not found
-	// for
-	// // this, why?
-	// "var RenderJson = Java.type(\"play.mvc.results.RenderJson\");"
-	// + "var NotFound = Java.type(\"play.mvc.results.NotFound\");"
-	// + "var Request = Java.type(\"play.mvc.Http.Request\");" + "";
+	static final String PLAY_HEADERS_JS = "/nashornplay/etc/playHeaders.js"; // resource
+																				// path
+	// static final String MODEL_HEADERS_JS = jsRoot + "/etc/modelHeaders.js";
+	// // file
+	// system
+	// path
+	// in
+	// the
+	// running
+	// application
+
+	private static ThreadLocal<String> modelHeaders = ThreadLocal.withInitial(() -> {
+//		return getModelsHeader();
+		return "";
+	});
+	private static ThreadLocal<Boolean> modelHeadersUpdated = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
 	private static ThreadLocal<ScriptEngine> engineHolder = ThreadLocal.withInitial(() -> {
 		// ScriptEngine engine = new
 		// ScriptEngineManager().getEngineByName("nashorn");
@@ -84,11 +92,11 @@ public class NashornController extends cn.bran.play.JapidController {
 		if (Play.mode.isProd())
 			try {
 				// engine.eval(new FileReader(PLAY_HEADERS_JS));
-//				engine.eval("load('" + PLAY_HEADERS_JS + "');");
+				// engine.eval("load('" + PLAY_HEADERS_JS + "');");
 				loadPlayHeaders(engine);
 				// engine.eval(new FileReader(MODEL_HEADERS_JS));
 				loadModelDefs(engine);
-				
+
 			} catch (ScriptException e) {
 				e.printStackTrace();
 			}
@@ -97,15 +105,11 @@ public class NashornController extends cn.bran.play.JapidController {
 		// }
 		return engine;
 	});
-	
-	private static AtomicBoolean modelHeadersUpdated = new AtomicBoolean(false);
 
-	
+
 	private static void loadModelDefs(ScriptEngine engine) throws ScriptException {
-		if (new File(MODEL_HEADERS_JS).exists()) {
-			play.Logger.debug("load %s to Nashorn context", MODEL_HEADERS_JS);
-			engine.eval("load('" + MODEL_HEADERS_JS + "');");
-		}
+		play.Logger.debug("load model headers to Nashorn context");
+		engine.eval(modelHeaders.get());
 	}
 
 	private static void loadPlayHeaders(ScriptEngine engine) throws ScriptException {
@@ -129,7 +133,7 @@ public class NashornController extends cn.bran.play.JapidController {
 	public static void process(String _module, String _method) throws NoSuchMethodException {
 		if (_method == null)
 			_method = "index";
-		
+
 		ScriptEngine engine = engineHolder.get();
 		if (_module.endsWith(".js"))
 			_module += _module.substring(0, _module.lastIndexOf(".js"));
@@ -170,8 +174,6 @@ public class NashornController extends cn.bran.play.JapidController {
 				}
 			}
 
-			// Object[] args = processParams((FunctionInfo) engine.get(_module +
-			// "." + _method));
 			Object methParams = module.getMember(_method + _PARAMS);
 			if (methParams instanceof Undefined) {
 				error(_method + " parameter information was not stored in the engine");
@@ -179,12 +181,6 @@ public class NashornController extends cn.bran.play.JapidController {
 			Object[] args = processParams((FunctionInfo) methParams);
 
 			Object r = ((JSObject) member).call(null, args);
-			//
-			// method two: this method use the engine and call top level
-			// function.
-			// this is to invoke method on object
-			// Object r = ((Invocable) engine).invokeMethod(module,
-			// request.method, args);
 
 			if (r instanceof RenderJapid) {
 				RenderJapid rj = (RenderJapid) r;
@@ -198,9 +194,9 @@ public class NashornController extends cn.bran.play.JapidController {
 			} else if (r instanceof Number) {
 				renderJSON(r);
 			} else if (r instanceof java.util.Date) {
-				renderJSON(((java.util.Date)r).getTime());
+				renderJSON(((java.util.Date) r).getTime());
 			} else if (r instanceof java.sql.Date) {
-				renderJSON(((java.sql.Date)r).getTime());
+				renderJSON(((java.sql.Date) r).getTime());
 			} else if (r instanceof Undefined || r == null) {
 				renderJSON("");
 			} else if (r instanceof ScriptObjectMirror) {
@@ -209,8 +205,7 @@ public class NashornController extends cn.bran.play.JapidController {
 				if ("Date".equals(className)) {
 					Double timestampLocalTime = (Double) som.callMember("getTime");
 					throw new RenderJackson(timestampLocalTime.longValue());
-				}
-				else {
+				} else {
 					throw new RenderJackson(r);
 				}
 			} else if (r instanceof Model) {
@@ -262,8 +257,8 @@ public class NashornController extends cn.bran.play.JapidController {
 			}
 			String tempName = fname;
 			VirtualFile vf = VirtualFile.fromRelativePath(tempName);
-			NashornExecutionException ce = new NashornExecutionException(vf, "\"" + e.getMessage() + "\"", lineNum,
-					0, 0);
+			NashornExecutionException ce = new NashornExecutionException(vf, "\"" + e.getMessage() + "\"", lineNum, 0,
+					0);
 			throw ce;
 		} else {
 			throw e;
@@ -317,13 +312,13 @@ public class NashornController extends cn.bran.play.JapidController {
 			_updateModelsHeader();
 			// is this too intrusive?
 			engine.getBindings(ScriptContext.ENGINE_SCOPE).clear();
-			
+
 			loadModelDefs(engine);
 			// parse the header
 			// engine.eval(new FileReader(PLAY_HEADERS_JS));
-//			engine.eval("load('" + PLAY_HEADERS_JS + "');");
+			// engine.eval("load('" + PLAY_HEADERS_JS + "');");
 			loadPlayHeaders(engine);
-			
+
 			// remove old definition
 			engine.getBindings(ScriptContext.ENGINE_SCOPE).remove(moduleName);
 
@@ -344,10 +339,12 @@ public class NashornController extends cn.bran.play.JapidController {
 				return parserModule(moduleName, engine);
 			}
 
-		} else {
-			if (!modelHeadersUpdated.get())
+		} else { // production mode
+			if (!modelHeadersUpdated.get()) {
 				_updateModelsHeader();
-			
+				loadModelDefs(engine);
+			}
+
 			JSObject module = (JSObject) engine.get(moduleName);
 			if (module == null) {
 				evaluate(engine, rawFile);
@@ -355,6 +352,11 @@ public class NashornController extends cn.bran.play.JapidController {
 			}
 			return module;
 		}
+	}
+
+	private static void _updateModelsHeader() {
+		modelHeaders.set(getModelsHeader());
+		modelHeadersUpdated.set(true);
 	}
 
 	private static JSObject parserModule(String moduleName, ScriptEngine engine) {
@@ -435,7 +437,7 @@ public class NashornController extends cn.bran.play.JapidController {
 			Object r = inv.invokeFunction(func, args);
 			return r;
 		} finally {
-			System.out.println("executed in " + (System.currentTimeMillis() - start) + " milliseconds");
+			Logger.debug("executed in " + (System.currentTimeMillis() - start) + " milliseconds");
 		}
 	}
 
@@ -450,7 +452,7 @@ public class NashornController extends cn.bran.play.JapidController {
 			} else
 				return null;
 		} finally {
-			System.out.println("Evaluated in " + (System.currentTimeMillis() - start) + " milliseconds");
+			Logger.debug("Evaluated in " + (System.currentTimeMillis() - start) + " milliseconds");
 		}
 	}
 
@@ -496,33 +498,17 @@ public class NashornController extends cn.bran.play.JapidController {
 		}
 	}
 
-	/**
-	 * regenerate the model import file
-	 * 
-	 * @throws IOException
-	 */
-	private static void _updateModelsHeader() {
+	private static String getModelsHeader() {
 		// try in exposed controller method is not good.
-		try (FileWriter fw = new FileWriter(new File(MODEL_HEADERS_JS))) {
-			List<Class> models = Play.classloader.getAssignableClasses(Model.class);
-			models.forEach(model -> {
-				String shortName = model.getSimpleName();
-				String nameWithPath = model.getCanonicalName();
-				try {
-					fw.write("var " + shortName + " = Java.type(\"" + nameWithPath + "\");\n");
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
-			modelHeadersUpdated.set(true);
-		} catch (Exception e1) {
-			throw new RuntimeException(e1);
-		}
-	}
+		StringBuffer result = new StringBuffer();
+		List<Class> models = Play.classloader.getAssignableClasses(Model.class);
+		models.forEach(model -> {
+			String shortName = model.getSimpleName();
+			String nameWithPath = model.getCanonicalName();
+			result.append("var " + shortName + " = Java.type(\"" + nameWithPath + "\");\n");
+		});
 
-	private static void updateModelsHeader() {
-		_updateModelsHeader();
-		renderText(MODEL_HEADERS_JS + " has been updated");
+		return result.toString();
 	}
 
 }

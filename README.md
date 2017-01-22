@@ -1,5 +1,12 @@
 # PlayWithJS
 
+The nashornPlay project enables using JavaScript, or ECMAScript 5.1 as of JDK8 Nashorn engine, to code Play controllers. Controllers in JavaScript are cleaner due to succinct JavaScript syntax. It opens doors for programmers with JavaScript experience to deliver applications from front-end to back-end, while enjoying the convenience and high performance that Play web engine offers. 
+
+The project provides a base controller that an application need to extend from. The controller can be empty or can have any number of regular Java actions, as long as they don't take the reserved name "process" that the base controller exposes. Any requests mapped to the process action are considered JavaScript actions. 
+
+The JavaScrits file are supposed to be located in the js directory. 
+
+
 The Template controller for JavaScript extension of Play 1.x series controllers is defined in the nashornPlay project. The sample project is in the jsPlay directory. 
 
 ## How to use the Play JavaScipt extension:
@@ -17,9 +24,12 @@ The Template controller for JavaScript extension of Play 1.x series controllers 
  - clone the jsPlay project.
  - copy the jar named nashorPlay.jar from nashornPlay project lib directory to jsPlay/lib.
  - get the required dependencies by running "cd jsPlay; play dependencies --sync"
- - play run to start it. 
+ - "play run" to start it. 
  - browse the url: "http://locahost:9000" and study the js/books.js file to learn how to write database access code in ECMAScipt. 
+ - The create an Eclipse project, issue command "play ec". Use "play idealize" to create projects for IDEA.
  - the URL mapping for JS controller is in the conf/route file. Look for a mapping for JSController.process. 
+ - the data models are defined in the files in the app/models directory. The initial data is defined in the conf/data.yml file. 
+
  
 ### Use nashornplay in a new project.
  - create new Play project with "play new"
@@ -124,13 +134,15 @@ An exemplary model is defined as:
             // optional fields
             public Integer votes;
             public Integer rank;
-            public Float rating = 6.0f;
+            public Float rating = 6.0f; // this field has a default value
             public Boolean available;
         }
 
      
 
-- There are a few ways that an application return data to clients. Here are some of the example:
+Here are some of the examples in the jsPlay project:
+
+----
 
         action1 : function() {
             var books = Book.find("order by year", []).fetch();
@@ -138,6 +150,10 @@ An exemplary model is defined as:
         }
 
 In the above action, Play JPA feature built in a model named Book is used to return all the books ordered by the year field. The books is returned to the client in JSON format, which is the default data format for generic JavaScript objects and Java objects, including simple object and collections. The books collection (a java.util.List object in the above case) is returned to the client as a JSON array.
+
+There are many methods of Java List object that can be used to manipulate the contained element. Study the java.util.List API for effective scripting.  
+
+----
 
         some : function(howMany) {
             var jpaQuery = JPA.find(Book.class);
@@ -155,10 +171,12 @@ In the above action, Play JPA feature built in a model named Book is used to ret
 In this case, a JPAQuery object is obtained by invoking the built-in find(...) method of models. The query object, which invoked on its fetch object with the maximum number of rows, will return up to that number of rows. Then the rows are wrapped in a JavaScript object and is returned to the client in JSON format. In case nothing is found, a simple String is returned to the client. In this case it's a simple string without being boxed up. 
 
 To invoke the action, a client uses a URL similar to this:
-        
+
         http://localhost:9000/js/books/some?howMany=3
     
 The query parameter howMany is mapped to the function some's parameter of the same name. 
+
+----
 
         newBook : function (title, year) {
             var book = new Book();
@@ -176,6 +194,8 @@ The above action creates a new instance of Book and sets two properties before s
 
 If the values for the properties of the new object is posted as JSON object, one can use the following pattern to set all the value on a new instance of the object, as in:
         
+----
+
         newBook2 : function (jsonData) {
             var book = new Book();
             var json = JSON.parse(jsonData)
@@ -188,6 +208,7 @@ If the values for the properties of the new object is posted as JSON object, one
         
 The for loop construct in JavaScript is able to iterate through all the properties of an JavaScript object. Also notice is that the JSON.parse function is used to convert a string representation of JSON back to a valid JavaScript object.
 
+----
 
         jpa2: function(fromRow, maxResults) {
             // the find return a query which can be set limit the returned data
@@ -195,15 +216,70 @@ The for loop construct in JavaScript is able to iterate through all the properti
             return query.from(fromRow).fetch(maxResults);
         }
 
- The above code shows how to use the JPAQuery methods to serve paged data. 
+The above code shows how to use the JPAQuery methods to serve paged data. 
+
+----
+        jpa2: function(fromRow, maxResults) {
+            var query = JPA.find(Book.class, "select title, author.name from Book");
+            return query.from(fromRow).fetch(maxResults);
+        },
  
+The above action uses the JPA class directly to do full a JPQL query and return a page of data. 
+
+The client would get something back like this:
+
+    [
+        ["The Shawshank Redemption", "Bort"],
+        ["The Godfather", "鈴木"]
+    ]
+
+Note that the returned data does not contain the property names, but just the raw data, which is good for reducing data size. The reason that only raw data is generated is that an explicit JPQL query has been specified. 
+
+If the above query has been like :
+    
+    var query = Book.find("", []);
+        
+The result would have been like below, where the full data content is returned, including the nested "author" object, which is another Model object defined in Contact.java:
+
+    [ {
+      "id" : 4,
+      "title" : "The Good",
+      "year" : 1943,
+      "author" : {
+        "id" : 1,
+        "firstname" : "Maxime",
+        "name" : "Dantec",
+        "birthdate" : 500601600000,
+        "email" : "hello@warry.fr"
+      },
+      "votes" : 233,
+      "rank" : 4,
+      "rating" : 8.5,
+      "available" : true
+    }, {
+      "id" : 5,
+      "title" : "My Fair Lady",
+      "year" : 1966,
+      "author" : {
+        "id" : 1,
+        "firstname" : "Maxime",
+        "name" : "Dantec",
+        "birthdate" : 500601600000,
+        "email" : "hello@warry.fr"
+      },
+      "votes" : 2345,
+      "rank" : 5,
+      "rating" : 6.0
+    } ]
+ 
+
 ## URL mapping
 
-The routing rule for JS cotroller is
+The routing rule for the JS cotroller is:
     
     *     /js/{_module}/{_method}             JSController.process
     
-The module file (basically one JS file) defines one module. All the js files must be located in the "js" directory. Nested directory is not supported. 
+The module file (basically one JS file) defines a module. All the js files must be located in the "js" directory. Nested directory is not supported. 
 
 The query parameters will be mapped to the JavaScript action function parameters, as long as they share the same name. The orders of the parameters in the client or of the server side action does not matter. 
 
@@ -216,5 +292,34 @@ Please note that the NashornController tries to coerce the input values to nativ
 5. 5.0F -> Float
 6. '1' -> String "1" // Strings in single quotes are not parsed. 
 7. "true"/"false" -> Boolean type
-8. String of possible date format will be tried for a proper conversion to Java Date object. 
+8. String of possible date format will be tried for a proper conversion to a Java Date object. 
 
+## Using Japid in JavaScript controller
+
+The following action uses a Japid template to render the book:
+
+        /**
+         * let's render a value in Japid template. 
+         * the template is "japidroot/japidviews/js/books/japid.html"
+         */
+        japid: function() {
+            var book = books.getBookById(new java.lang.Long(1))
+            return renderJapid(book) 
+        },
+ The template is located in "japidroot/japidviews/js/books/" directory and must match the name of the action, "japid" in the above case. Here is what's inside the template:
+
+     `(Book book)
+    <!DOCTYPE html>
+    <html>
+    <body>
+        <p>~{book.title}, ~{book.year}, ~book.id</p>
+    </body>
+    </html>
+ 
+## Using other JavaScript resources in actions
+
+JDK Nashorn engine offeres load('...') function for one to load other javascript resource in the global space. The books.js loads another javascript file by means of this mechanism. 
+
+nashornPlay has experimental code to enable using "require" in actions. CommonJS modules can be put in "js/commonjs" and can be loaded by "require(...)" in actions. The mechanism depends on a third-party module located [here](https://github.com/coveo/nashorn-commonjs-modules).
+
+        
