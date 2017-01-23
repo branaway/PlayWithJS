@@ -296,7 +296,7 @@ Please note that the NashornController tries to coerce the input values to nativ
 
 ## Using Japid in JavaScript controller
 
-The following action uses a Japid template to render the book:
+The following action uses a [Japid](http://github.com/branaway/Japid) template to render the book:
 
         /**
          * let's render a value in Japid template. 
@@ -315,11 +315,13 @@ The following action uses a Japid template to render the book:
         <p>~{book.title}, ~{book.year}, ~book.id</p>
     </body>
     </html>
+    
+BTW, the ~{...} (with or without the curly braces) is the template expression to display a value with HTML sensitive characters escaped. The un-escaped version is ${}. 
  
 ## Using other JavaScript resources in actions
 
 JDK Nashorn engine offeres load('...') function for one to load other javascript resource in the global space. The books.js loads another javascript file by means of this mechanism. 
 
-nashornPlay has experimental code to enable using "require" in actions. CommonJS modules can be put in "js/commonjs" and can be loaded by "require(...)" in actions. The mechanism depends on a third-party module located [here](https://github.com/coveo/nashorn-commonjs-modules).
+nashornPlay has experimental code to enable using "require" in actions. CommonJS modules can be put in "js/commonjs" and can be loaded by "require(...)" in actions. The mechanism depends on a third-party module located [here](https://github.com/coveo/nashorn-commonjs-modules). Please check out the toRequire function in the books.js for a sample.
 
         

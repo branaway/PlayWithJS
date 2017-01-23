@@ -82,13 +82,7 @@ public class NashornController extends cn.bran.play.JapidController {
 		ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine(options);
 		// enable the "require" plugin
 		// https://github.com/coveo/nashorn-commonjs-modules
-		FilesystemFolder rootFolder = FilesystemFolder.create(new File(COMMONJS), "UTF-8");
-		try {
-			Require.enable((NashornScriptEngine) engine, rootFolder);
-		} catch (ScriptException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+		enableRequire(engine);
 		if (Play.mode.isProd())
 			try {
 				// engine.eval(new FileReader(PLAY_HEADERS_JS));
@@ -105,6 +99,17 @@ public class NashornController extends cn.bran.play.JapidController {
 		// }
 		return engine;
 	});
+
+
+	private static void enableRequire(ScriptEngine engine) {
+		FilesystemFolder rootFolder = FilesystemFolder.create(new File(COMMONJS), "UTF-8");
+		try {
+			Require.enable((NashornScriptEngine) engine, rootFolder);
+		} catch (ScriptException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
 
 
 	private static void loadModelDefs(ScriptEngine engine) throws ScriptException {
@@ -312,7 +317,9 @@ public class NashornController extends cn.bran.play.JapidController {
 			_updateModelsHeader();
 			// is this too intrusive?
 			engine.getBindings(ScriptContext.ENGINE_SCOPE).clear();
-
+			
+			enableRequire(engine);
+			
 			loadModelDefs(engine);
 			// parse the header
 			// engine.eval(new FileReader(PLAY_HEADERS_JS));

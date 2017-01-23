@@ -8,7 +8,7 @@ var books = function() {
 		/**
 		 * the default function
 		 */
-		index: function() {
+		index: function() {2
 			return new File('readme.txt')
 		},
 		
@@ -136,6 +136,18 @@ var books = function() {
 		japid: function() {
 			var book = books.getBookById(new java.lang.Long(1))
 			return renderJapid(book) 
+		},
+		
+		toRequire: function (){
+			print("--------------")
+			var math = require("./maths.js")
+			print("|||" + math.qqq())
+			var sum = math.add(1, 2)
+			print(sum)
+
+			var say = require("./hello.js")
+			say.sayit("me");
+			return "OK";
 		},
 		
 		/**
