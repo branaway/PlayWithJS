@@ -138,6 +138,10 @@ var books = function() {
 			return renderJapid(book) 
 		},
 		
+		/**
+		 * demo the require feature
+		 * path: http://localhost:9000/js/books/toRequire
+		 */
 		toRequire: function (){
 			print("--------------")
 			var math = require("./maths.js")
@@ -150,6 +154,10 @@ var books = function() {
 			return "OK";
 		},
 		
+		/**
+		 * login a user to display the login form, depending on the HTTP method
+		 * path: http://localhost:9000/js/books/login
+		 */
 		login: function(user_name, user_pwd){
 			if (request.method == "GET")
 				return new File("public/login.html")
@@ -164,6 +172,10 @@ var books = function() {
 			}
 		},
 		
+		/**
+		 * logout the current user
+		 * path: http://localhost:9000/js/books/logout
+		 */
 		logout: function(){
 			session.put("_user", "")
 			return "logout OK"
@@ -179,7 +191,7 @@ var books = function() {
 				var u = session.get("_user")
 				print("current user: " + u)
 				if (!u){
-					return redirect("/js/books/login")
+					return redirect("/js/books/login") // note the redirect function use
 				}
 			}
 		}
