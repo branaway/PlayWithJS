@@ -8,8 +8,8 @@ var books = function() {
 		/**
 		 * the default function
 		 */
-		index: function() {2
-			return new File('readme.txt')
+		index: function() {
+			return new File(__FILE__) // return the current file
 		},
 		
 		/**
@@ -150,16 +150,38 @@ var books = function() {
 			return "OK";
 		},
 		
+		login: function(user_name, user_pwd){
+			if (request.method == "GET")
+				return new File("public/login.html")
+			else {
+				if (user_name) {
+					session.put("_user", user_name)
+					return "welcome: " + user_name
+				}
+				else {
+					return new File("public/login.html")
+				}
+			}
+		},
+		
+		logout: function(){
+			session.put("_user", "")
+			return "logout OK"
+		},
+		
 		/**
 		 * 特殊interceptor function， 在真正函数调用之前被调用。 常用于安全检查。 如果欲立刻返回给用户错误信息
 		 * 可以简单粗暴返回 return Forbidden()。 也可以直接调用另外的函数， 例如 login（）。
 		 * 如果不想中断目标函数的访问，不要调用任何 return 语句。
 		 */
 		_before : function(functionName) {
-			// do nothing to pass through
-			// or return something to reflow the action chain
-			// return forbidden(functionName);
-			// return renderText("you don't have the right: " + functionName);
+			if (functionName == "all") {
+				var u = session.get("_user")
+				print("current user: " + u)
+				if (!u){
+					return redirect("/js/books/login")
+				}
+			}
 		}
 	}
 }();

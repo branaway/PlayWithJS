@@ -43,6 +43,9 @@ function redirect(o) {return new Redirect(o);}
 var Request = Java.type("play.mvc.Http.Request"); 
 var request = Request.current();
 
+var Response = Java.type("play.mvc.Http.Response"); 
+var response = Response.current();
+
 var Flash = Java.type("play.mvc.Scope.Flash"); 
 var flash = Flash.current();
 

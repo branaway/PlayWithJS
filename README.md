@@ -1,20 +1,19 @@
 # PlayWithJS
 
-The nashornPlay project enables using JavaScript, or ECMAScript 5.1 as of JDK8 Nashorn engine, to code Play controllers. Controllers in JavaScript are cleaner due to succinct JavaScript syntax. It opens doors for programmers with JavaScript experience to deliver applications from front-end to back-end, while enjoying the convenience and high performance that Play web engine offers. 
+The nashornPlay project enables using JavaScript, or ECMAScript 5.1 as of JDK8 Nashorn engine, to code Play 1.x controllers. Controllers in JavaScript are cleaner due to the succinct JavaScript syntax. It opens doors for programmers with JavaScript experience to deliver applications from front-end to back-end, while enjoying the convenience and high performance that Play web engine offers. 
 
 The project provides a base controller that an application need to extend from. The controller can be empty or can have any number of regular Java actions, as long as they don't take the reserved name "process" that the base controller exposes. Any requests mapped to the process action are considered JavaScript actions. 
 
-The JavaScrits file are supposed to be located in the js directory. 
+The JavaScrits file must be located in the js directory. 
 
 
-The Template controller for JavaScript extension of Play 1.x series controllers is defined in the nashornPlay project. The sample project is in the jsPlay directory. 
+The base controller for JavaScript extension of Play 1.x series controllers is defined in the nashornPlay project. The sample project is in the jsPlay directory. 
 
 ## How to use the Play JavaScipt extension:
 
 ### build the  nashornPlay jar
  
  - cd nashornPlay
- - play dependencies
  - play dependencies --sync
  - play bm
    specify 1.2 as the minimum play version requirement.
@@ -46,7 +45,7 @@ The Template controller for JavaScript extension of Play 1.x series controllers 
             action1: function(p1, p2) {...},
             action2: function(p3, p4...) {...},
             ...
-            _before: function(){
+            _before: function(actionName){
             
             }
     }();
@@ -60,6 +59,7 @@ The Template controller for JavaScript extension of Play 1.x series controllers 
 2. Dates are returned as the the number of milliseconds since January 1, 1970, 00:00:00 GMT.
 3. A Java File object will be streamed back to the client as a binary stream. 
 4. All Java/JavaScript objects and collections are returned to clients in JSON format. 
+
 
 
 ## RDBMS Access
@@ -271,7 +271,21 @@ The result would have been like below, where the full data content is returned, 
       "rank" : 5,
       "rating" : 6.0
     } ]
- 
+
+## Automatic variables available in the actions
+
+The following variables are automatically available in the actions. 
+
+- request: the HTTP request
+- response: the HTTP response
+- flash: a short-lived storage that is available in one round of request/response. It can survive a redirect though.
+- session: cookie based storage for a browsing session
+- params: the parameters associated with an HTTP request
+
+Study the following links for better understanding the above variables:
+
+- [params](https://playframework.com/documentation/1.4.0/controllers#params)
+- [session and scopes](https://playframework.com/documentation/1.4.0/controllers#session)
 
 ## URL mapping
 
@@ -318,10 +332,26 @@ The following action uses a [Japid](http://github.com/branaway/Japid) template t
     
 BTW, the ~{...} (with or without the curly braces) is the template expression to display a value with HTML sensitive characters escaped. The un-escaped version is ${}. 
  
+## Other rendering functions
+
+In classic Play 1.x, various renderXXX() are defined to return different type of HTTP response. Similarly the following rendering functions are available in actions. 
+
+Note 1: Play 1.x uses exceptions to generate returned values, whereas NashornPlay uses "return" to return a rendering method.
+Note 2: programmers don't need to explicitly call these renderXXX to generate proper response. If all you need is generate JSON response, you just return the object directly and JSON serialization automatically applies.   
+
+- renderText(myString): e.g., return renderText("hello")
+- renderJSON({...}): e.g., return renderJSON(book). Note, GSON is used to render objects 
+- renderJackson({...}): render JSON with Jackson library. This is the default rendering method if plain objects (Java or JavaScript native) are returned in actions.   
+- renderXml({})
+- renderJapid(...)
+- renderHtml(string)
+- redirect(url): generate an HTTP redirect to the URL
+- forbidden(message): 403
+
+
 ## Using other JavaScript resources in actions
 
 JDK Nashorn engine offeres load('...') function for one to load other javascript resource in the global space. The books.js loads another javascript file by means of this mechanism. 
 
-nashornPlay has experimental code to enable using "require" in actions. CommonJS modules can be put in "js/commonjs" and can be loaded by "require(...)" in actions. The mechanism depends on a third-party module located [here](https://github.com/coveo/nashorn-commonjs-modules). Please check out the toRequire function in the books.js for a sample.
+nashornPlay has experimental code to enable using "require" in actions. CommonJS modules can be put in "js/commonjs" and can be loaded by "require(...)" in actions. The mechanism depends on a third-party module located [here](https://github.com/coveo/nashorn-commonjs-modules). Please check out the toRequire() function in the books.js for a sample.
 
-        
