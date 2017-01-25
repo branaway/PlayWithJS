@@ -272,6 +272,7 @@ The result would have been like below, where the full data content is returned, 
       "rating" : 6.0
     } ]
 
+
 ## Automatic variables available in the actions
 
 The following variables are automatically available in the actions. 
@@ -286,6 +287,50 @@ Study the following links for better understanding the above variables:
 
 - [params](https://playframework.com/documentation/1.4.0/controllers#params)
 - [session and scopes](https://playframework.com/documentation/1.4.0/controllers#session)
+
+## File uploading
+
+There is a convenient function to retrieve an uploaded file from action. Study this action:
+
+        /**
+         * upload a file
+         * path: http://localhost:9000/js/books/upload
+         */
+        upload: function(file, comment) {
+            if (request.method == "GET")
+                return new File("public/upload.html")
+            else {
+                // the file should have been mapped to the upload
+                if (file.exists()){
+                    var r = {name: file.getName(), size: file.length(), comment: comment}
+                    file.delete();
+                    return r;
+                }
+                else {
+                    return "could not find the uploaded file..."
+                }
+            }
+        },
+        
+which is invoked by a file upload form:
+
+    <form method="post" action="/js/books/upload" enctype="multipart/form-data">
+        <div>
+            <label for="file">File:</label> <input type="file" name="file" size="60"/>
+        </div>
+        <div>
+            <label for="comment">Comment:</label> <input type="text" id="comment"
+                name="comment" size="60"/>
+        </div>
+        <div>
+            <button type="submit">Submit</button>
+        </div>
+    </form>
+    
+
+The uploaded file has been assign to the file variable which is of java.util.File type, like in a Java Play action. It's up to the action to properly dispose the file object. In the above case it's simply deleted. 
+
+The parameter names must strictly match those of the form fields, or we won't get the file.
 
 ## URL mapping
 

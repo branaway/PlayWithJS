@@ -53,6 +53,7 @@ var Session = Java.type("play.mvc.Scope.Session");
 var session = Session.current();
 
 var JavaUtils = Java.type("nashornplay.etc.JavaUtils");
+var getUploadedFile = function(name) { return JavaUtils.bindFile(name)}
 
 var params = request.params.data; // a Map object
 

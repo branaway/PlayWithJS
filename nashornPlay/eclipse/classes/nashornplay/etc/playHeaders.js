@@ -43,6 +43,9 @@ function redirect(o) {return new Redirect(o);}
 var Request = Java.type("play.mvc.Http.Request"); 
 var request = Request.current();
 
+var Response = Java.type("play.mvc.Http.Response"); 
+var response = Response.current();
+
 var Flash = Java.type("play.mvc.Scope.Flash"); 
 var flash = Flash.current();
 
@@ -50,6 +53,7 @@ var Session = Java.type("play.mvc.Scope.Session");
 var session = Session.current();
 
 var JavaUtils = Java.type("nashornplay.etc.JavaUtils");
+var getUploadedFile = function(name) { return JavaUtils.bindFile(name)}
 
 var params = request.params.data; // a Map object
 

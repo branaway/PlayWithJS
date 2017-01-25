@@ -181,6 +181,28 @@ var books = function() {
 			return "logout OK"
 		},
 		
+		
+		/**
+		 * upload a file
+		 * path: http://localhost:9000/js/books/upload
+		 */
+		upload: function(file, comment) {
+			if (request.method == "GET")
+				return new File("public/upload.html")
+			else {
+				// the file should have been mapped to the upload
+//				var file = getUploadedFile(fileName);
+//				var file = JavaUtils.bindFile(fileName);
+				if (file.exists()){
+					var r = {name: file.getName(), size: file.length(), comment: comment}
+					file.delete();
+					return r;
+				}
+				else {
+					return "could not find the uploaded file..."
+				}
+			}
+		},
 		/**
 		 * 特殊interceptor function， 在真正函数调用之前被调用。 常用于安全检查。 如果欲立刻返回给用户错误信息
 		 * 可以简单粗暴返回 return Forbidden()。 也可以直接调用另外的函数， 例如 login（）。

@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Insert title here</title>
+<title>upload a file</title>
 <style TYPE="text/css">
 form {
     /* Just to center the form on the page */
@@ -56,16 +56,15 @@ button {
 </head>
 <body>
 <div>
-put anything in the fields...
+select a file....
 </div>
-	<form method="post" action="/js/books/login">
+	<form method="post" action="/js/books/upload" enctype="multipart/form-data">
 		<div>
-			<label for="name">Name:</label> <input type="text" id="name"
-				name="user_name" />
+			<label for="file">File:</label> <input type="file" name="file" size="60"/>
 		</div>
 		<div>
-			<label for="pwd">Password:</label> <input type="password" id="pwd"
-				name="user_pwd" />
+			<label for="comment">Comment:</label> <input type="text" id="comment"
+				name="comment" size="60"/>
 		</div>
 		<div>
             <button type="submit">Submit</button>

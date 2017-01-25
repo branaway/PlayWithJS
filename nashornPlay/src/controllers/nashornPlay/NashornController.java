@@ -36,6 +36,7 @@ import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import jdk.nashorn.internal.runtime.ECMAException;
 import jdk.nashorn.internal.runtime.ParserException;
 import jdk.nashorn.internal.runtime.Undefined;
+import nashornplay.etc.JavaUtils;
 import nashornplay.etc.NashornExecutionException;
 import nashornplay.etc.NashornTool;
 import nashornplay.etc.NashornTool.FunctionInfo;
@@ -45,6 +46,7 @@ import play.Logger;
 import play.Play;
 import play.db.jpa.Model;
 import play.exceptions.CompilationException;
+import play.mvc.Http.Request;
 import play.mvc.Scope.Params;
 import play.mvc.results.Result;
 import play.utils.Utils.AlternativeDateFormat;
@@ -473,6 +475,14 @@ public class NashornController extends cn.bran.play.JapidController {
 	 * @return
 	 */
 	public static Object coerceArg(String e) {
+		String contentType = Request.current().contentType;
+		if ("multipart/form-data".equals(contentType)) {
+			// let's try to find an uploaded file
+			File f = JavaUtils.bindFile(e);
+			if (f != null)
+				return f;
+		}
+		
 		if (!shouldCoerceArg)
 			return e;
 
