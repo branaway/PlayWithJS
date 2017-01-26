@@ -2,10 +2,14 @@ package nashornplay.etc;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import jdk.nashorn.internal.runtime.Undefined;
 import play.data.Upload;
 import play.data.binding.TypeBinder;
 import play.mvc.Http.Request;
+import play.mvc.results.Redirect;
 
 /**
  * locate the File object created during multipart/form-data parser. Modeled
@@ -38,5 +42,27 @@ public class JavaUtils {
 			}
 		}
 		return null;
+	}
+
+	public static Redirect redirect(Object url, Map<String, String> args) {
+		if (url instanceof Undefined)
+			args = null;
+
+		if (url instanceof String) {
+			String theUrl = (String) url;
+
+			if (!theUrl.startsWith("/js")) {
+
+				theUrl = theUrl.replaceAll("\\.", "/");
+
+				if (theUrl.startsWith("/"))
+					theUrl = "/js" + theUrl;
+				else
+					theUrl = "/js/" + theUrl;
+			}
+
+			return new Redirect(theUrl, args);
+		}
+		return new Redirect(url.toString(), args);
 	}
 }

@@ -47,7 +47,7 @@ var books = function() {
 			var book = Book.findById(id);
 			if (book)
 				// return renderJapid(0, book); 
-				//the template
+				// the template
 				// is"japidroot/japidviews/js/books/getBookById.html"
 				return book;
 //				return id;
@@ -124,9 +124,7 @@ var books = function() {
 		},
 		
 		now: function() {
-//			return new Date()
-//			return 1;
-			return "hello";
+			return new Date()
 		},
 		
 		/**
@@ -171,7 +169,7 @@ var books = function() {
 				}
 			}
 		},
-		
+	
 		/**
 		 * logout the current user
 		 * path: http://localhost:9000/js/books/logout
@@ -208,12 +206,13 @@ var books = function() {
 		 * 可以简单粗暴返回 return Forbidden()。 也可以直接调用另外的函数， 例如 login（）。
 		 * 如果不想中断目标函数的访问，不要调用任何 return 语句。
 		 */
-		_before : function(functionName) {
+		_before : function(functionName, args) {
 			if (functionName == "all") {
 				var u = session.get("_user")
 				print("current user: " + u)
 				if (!u){
-					return redirect("/js/books/login") // note the redirect function use
+					return redirect("books.login", {a: "1", b:"2"}) // note the redirect function use with some parameters
+//					return books.login() // note direct call
 				}
 			}
 		}

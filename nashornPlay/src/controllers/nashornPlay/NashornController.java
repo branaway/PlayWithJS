@@ -123,8 +123,9 @@ public class NashornController extends cn.bran.play.JapidController {
 		InputStream playHeaders = NashornController.class.getResourceAsStream(PLAY_HEADERS_JS);
 		play.Logger.debug("load %s to Nashorn context", PLAY_HEADERS_JS);
 		try {
+//			engine.eval("load('classpath:" + "playHeaders.js" + "')");
 			engine.eval(new InputStreamReader(playHeaders, "UTF-8"));
-		} catch (UnsupportedEncodingException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -169,59 +170,23 @@ public class NashornController extends cn.bran.play.JapidController {
 				notFound("methd not found in the module: " + _module + "." + _method);
 			}
 
-			Object before = module.getMember("_before");
-			if (before instanceof JSObject) {
-				// call the interceptor with the method name
-				Object itorResult = ((JSObject) before).call(null, _method);
-				if (itorResult instanceof RenderJapid) {
-					RenderJapid rj = (RenderJapid) itorResult;
-					renderJapidWith(jsRoot + "/" + _module + "/" + "_before", rj.args);
-				} else if (itorResult instanceof Result) {
-					throw (Result) itorResult;
-				}
-			}
-
 			Object methParams = module.getMember(_method + _PARAMS);
 			if (methParams instanceof Undefined) {
 				error(_method + " parameter information was not stored in the engine");
 			}
 			Object[] args = processParams((FunctionInfo) methParams);
 
+			Object before = module.getMember("_before");
+			if (before instanceof JSObject) {
+				// call the interceptor with the method name
+				Object itorResult = ((JSObject) before).call(null, _method);
+				processBeforeResult(_module, _method, itorResult);
+			}
+
+
 			Object r = ((JSObject) member).call(null, args);
 
-			if (r instanceof RenderJapid) {
-				RenderJapid rj = (RenderJapid) r;
-				renderJapidWith(jsRoot + "/" + _module + "/" + _method, rj.args);
-			} else if (r instanceof Result) {
-				throw (Result) r;
-			} else if (r instanceof File) {
-				renderBinary((File) r);
-			} else if (r instanceof String) {
-				renderJSON(r);
-			} else if (r instanceof Number) {
-				renderJSON(r);
-			} else if (r instanceof java.util.Date) {
-				renderJSON(((java.util.Date) r).getTime());
-			} else if (r instanceof java.sql.Date) {
-				renderJSON(((java.sql.Date) r).getTime());
-			} else if (r instanceof Undefined || r == null) {
-				renderJSON("");
-			} else if (r instanceof ScriptObjectMirror) {
-				ScriptObjectMirror som = (ScriptObjectMirror) r;
-				String className = som.getClassName();
-				if ("Date".equals(className)) {
-					Double timestampLocalTime = (Double) som.callMember("getTime");
-					throw new RenderJackson(timestampLocalTime.longValue());
-				} else {
-					throw new RenderJackson(r);
-				}
-			} else if (r instanceof Model) {
-				throw new RenderJackson(r);
-			} else if (r instanceof Collection) {
-				throw new RenderJackson(r);
-			} else {
-				throw new RenderJackson(r);
-			}
+			processResult(_module, _method, r);
 		} catch (FileNotFoundException e) {
 			notFound(_module);
 		} catch (ScriptException e) {
@@ -248,6 +213,79 @@ public class NashornController extends cn.bran.play.JapidController {
 			tryCaptureScriptError(fileName, e);
 		} catch (RuntimeException e) {
 			tryCaptureScriptError(fileName, e);
+		}
+	}
+
+
+	private static void processResult(String _module, String _method, Object r) {
+		if (r instanceof RenderJapid) {
+			RenderJapid rj = (RenderJapid) r;
+			renderJapidWith(jsRoot + "/" + _module + "/" + _method, rj.args);
+		} else if (r instanceof Result) {
+			throw (Result) r;
+		} else if (r instanceof File) {
+			renderBinary((File) r);
+		} else if (r instanceof String) {
+			renderJSON(r);
+		} else if (r instanceof Number) {
+			renderJSON(r);
+		} else if (r instanceof java.util.Date) {
+			renderJSON(((java.util.Date) r).getTime());
+		} else if (r instanceof java.sql.Date) {
+			renderJSON(((java.sql.Date) r).getTime());
+		} else if (r instanceof Undefined || r == null) {
+			renderJSON("");
+		} else if (r instanceof ScriptObjectMirror) {
+			ScriptObjectMirror som = (ScriptObjectMirror) r;
+			String className = som.getClassName();
+			if ("Date".equals(className)) {
+				Double timestampLocalTime = (Double) som.callMember("getTime");
+				throw new RenderJackson(timestampLocalTime.longValue());
+			} else {
+				throw new RenderJackson(r);
+			}
+		} else if (r instanceof Model) {
+			throw new RenderJackson(r);
+		} else if (r instanceof Collection) {
+			throw new RenderJackson(r);
+		} else {
+			throw new RenderJackson(r);
+		}
+	}
+
+	private static void processBeforeResult(String _module, String _method, Object r) {
+		if (r instanceof RenderJapid) {
+			RenderJapid rj = (RenderJapid) r;
+			renderJapidWith(jsRoot + "/" + _module + "/" + _method, rj.args);
+		} else if (r instanceof Result) {
+			throw (Result) r;
+		} else if (r instanceof File) {
+			renderBinary((File) r);
+		} else if (r instanceof String) {
+			renderJSON(r);
+		} else if (r instanceof Number) {
+			renderJSON(r);
+		} else if (r instanceof java.util.Date) {
+			renderJSON(((java.util.Date) r).getTime());
+		} else if (r instanceof java.sql.Date) {
+			renderJSON(((java.sql.Date) r).getTime());
+		} else if (r instanceof Undefined || r == null) {
+//			// fall through
+		} else if (r instanceof ScriptObjectMirror) {
+			ScriptObjectMirror som = (ScriptObjectMirror) r;
+			String className = som.getClassName();
+			if ("Date".equals(className)) {
+				Double timestampLocalTime = (Double) som.callMember("getTime");
+				throw new RenderJackson(timestampLocalTime.longValue());
+			} else {
+				throw new RenderJackson(r);
+			}
+		} else if (r instanceof Model) {
+			throw new RenderJackson(r);
+		} else if (r instanceof Collection) {
+			throw new RenderJackson(r);
+		} else {
+			throw new RenderJackson(r);
 		}
 	}
 
@@ -326,7 +364,7 @@ public class NashornController extends cn.bran.play.JapidController {
 			// parse the header
 			// engine.eval(new FileReader(PLAY_HEADERS_JS));
 			// engine.eval("load('" + PLAY_HEADERS_JS + "');");
-			loadPlayHeaders(engine);
+			loadPlayHeaders(engine); //XXX error reporting not to be mixed with target action
 
 			// remove old definition
 			engine.getBindings(ScriptContext.ENGINE_SCOPE).remove(moduleName);
@@ -429,26 +467,6 @@ public class NashornController extends cn.bran.play.JapidController {
 		}).toArray();
 	}
 
-	/**
-	 * invoke a engine level function
-	 * 
-	 * @param inv
-	 * @param func
-	 * @param args
-	 * @return
-	 * @throws ScriptException
-	 * @throws NoSuchMethodException
-	 */
-	private static Object invoke(Invocable inv, String func, Object... args)
-			throws ScriptException, NoSuchMethodException {
-		final long start = System.currentTimeMillis();
-		try {
-			Object r = inv.invokeFunction(func, args);
-			return r;
-		} finally {
-			Logger.debug("executed in " + (System.currentTimeMillis() - start) + " milliseconds");
-		}
-	}
 
 	private static Object evaluate(ScriptEngine engine, Object url) throws ScriptException, FileNotFoundException {
 		final long start = System.currentTimeMillis();
