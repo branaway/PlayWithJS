@@ -23,7 +23,32 @@ var RenderFile = Java.type("play.mvc.results.RenderBinary");
 function renderFile(o) {return new RenderFile(o);}
 
 var Redirect = Java.type("play.mvc.results.Redirect"); 
+//function redirect(url, args) {
+//	print(url)
+//	
+//	if (args == undefined)
+//		args = null;
+//	
+//	
+//	if (typeof(url) == "string" && !url.startsWith('/js')){
+//		url.replace(/\./, '/')
+//		print(url)
+//		if (url.startsWith('/'))
+//			url = "/js" + url;
+//		else
+//			url = "/js/" + url;
+//	}
+//	
+//	if (typeof url == "Function") {
+//		print(url)
+//		url = url.name;
+//	}
+//		
+//	return new Redirect(url, args);
+//}
+
 var RenderError = Java.type("play.mvc.results.Error"); 
+function renderError(o) {return new RenderError(o);}
 
 var NotFound = Java.type("play.mvc.results.NotFound"); 
 function notFound(o) {return new NotFound(o);}
@@ -34,11 +59,12 @@ function forbidden(o) {return new Forbidden(o);}
 var RenderJapid = Java.type("nashornplay.etc.RenderJapid"); 
 function renderJapid() {return new RenderJapid(arguments);}
 
+var RenderGroovy = Java.type("nashornplay.etc.RenderGroovy"); 
+function render(args) {return new RenderGroovy(args);}
+
 var RenderJackson = Java.type("nashornplay.etc.RenderJackson"); 
 function renderJackson(o) {return new RenderJackson(o);}
 
-function renderError(o) {return new RenderError(o);}
-function redirect(o) {return new Redirect(o);}
 
 var Request = Java.type("play.mvc.Http.Request"); 
 var request = Request.current();
@@ -54,6 +80,12 @@ var session = Session.current();
 
 var JavaUtils = Java.type("nashornplay.etc.JavaUtils");
 var getUploadedFile = function(name) { return JavaUtils.bindFile(name)}
+// the above method is probably not useful anymore since the file field mapping would have been 
+// done by the NashornController. 
+
+var redirect = function(target, args) {
+	return JavaUtils.redirect(target, args);
+}
 
 var params = request.params.data; // a Map object
 

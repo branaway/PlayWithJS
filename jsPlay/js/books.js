@@ -46,10 +46,9 @@ var books = function() {
 			// return foo(id); // 可以调用 ‘js/fun.js' 定义的函数
 			var book = Book.findById(id);
 			if (book)
-				// return renderJapid(0, book); 
-				// the template
-				// is"japidroot/japidviews/js/books/getBookById.html"
-				return book;
+				 return renderJapid(0, book); 
+//				 the template is"japidroot/japidviews/js/books/getBookById.html"
+//				return book;
 //				return id;
 			else
 				return "ooops!";
@@ -135,6 +134,18 @@ var books = function() {
 			var book = books.getBookById(new java.lang.Long(1))
 			return renderJapid(book) 
 		},
+		
+		
+		
+		/**
+		 * let's render a value in Play's default Groovy based template. 
+		 * The view is at: "app/views/js/books/groovy.html"
+		 */
+		groovy: function() {
+			var book = Book.findById(new java.lang.Long(1))
+			return render({book: book}) // the argument must a map
+		},
+		
 		
 		/**
 		 * demo the require feature

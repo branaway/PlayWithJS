@@ -3,21 +3,17 @@ package controllers.nashornPlay;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import javax.script.Invocable;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -28,6 +24,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import com.coveo.nashorn_modules.FilesystemFolder;
 import com.coveo.nashorn_modules.Require;
 
+import cn.bran.play.JapidController;
 import jdk.nashorn.api.scripting.JSObject;
 import jdk.nashorn.api.scripting.NashornException;
 import jdk.nashorn.api.scripting.NashornScriptEngine;
@@ -40,19 +37,21 @@ import nashornplay.etc.JavaUtils;
 import nashornplay.etc.NashornExecutionException;
 import nashornplay.etc.NashornTool;
 import nashornplay.etc.NashornTool.FunctionInfo;
+import nashornplay.etc.RenderGroovy;
 import nashornplay.etc.RenderJackson;
 import nashornplay.etc.RenderJapid;
 import play.Logger;
 import play.Play;
 import play.db.jpa.Model;
 import play.exceptions.CompilationException;
+import play.mvc.Controller;
 import play.mvc.Http.Request;
 import play.mvc.Scope.Params;
 import play.mvc.results.Result;
 import play.utils.Utils.AlternativeDateFormat;
 import play.vfs.VirtualFile;
 
-public class NashornController extends cn.bran.play.JapidController {
+public class NashornController extends Controller {
 	public static String jsRoot = "js";
 	private static final String COMMONJS = jsRoot + "/commonjs";
 	private static final String _PARAMS = "_params";
@@ -71,7 +70,7 @@ public class NashornController extends cn.bran.play.JapidController {
 	// application
 
 	private static ThreadLocal<String> modelHeaders = ThreadLocal.withInitial(() -> {
-//		return getModelsHeader();
+		// return getModelsHeader();
 		return "";
 	});
 	private static ThreadLocal<Boolean> modelHeadersUpdated = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -102,7 +101,6 @@ public class NashornController extends cn.bran.play.JapidController {
 		return engine;
 	});
 
-
 	private static void enableRequire(ScriptEngine engine) {
 		FilesystemFolder rootFolder = FilesystemFolder.create(new File(COMMONJS), "UTF-8");
 		try {
@@ -113,7 +111,6 @@ public class NashornController extends cn.bran.play.JapidController {
 		}
 	}
 
-
 	private static void loadModelDefs(ScriptEngine engine) throws ScriptException {
 		play.Logger.debug("load model headers to Nashorn context");
 		engine.eval(modelHeaders.get());
@@ -123,7 +120,7 @@ public class NashornController extends cn.bran.play.JapidController {
 		InputStream playHeaders = NashornController.class.getResourceAsStream(PLAY_HEADERS_JS);
 		play.Logger.debug("load %s to Nashorn context", PLAY_HEADERS_JS);
 		try {
-//			engine.eval("load('classpath:" + "playHeaders.js" + "')");
+			// engine.eval("load('classpath:" + "playHeaders.js" + "')");
 			engine.eval(new InputStreamReader(playHeaders, "UTF-8"));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -183,7 +180,6 @@ public class NashornController extends cn.bran.play.JapidController {
 				processBeforeResult(_module, _method, itorResult);
 			}
 
-
 			Object r = ((JSObject) member).call(null, args);
 
 			processResult(_module, _method, r);
@@ -216,11 +212,15 @@ public class NashornController extends cn.bran.play.JapidController {
 		}
 	}
 
-
 	private static void processResult(String _module, String _method, Object r) {
 		if (r instanceof RenderJapid) {
 			RenderJapid rj = (RenderJapid) r;
-			renderJapidWith(jsRoot + "/" + _module + "/" + _method, rj.args);
+			String template = jsRoot + "/" + _module + "/" + _method;
+			JapidController.renderJapidWith(template, rj.args);
+		} else if (r instanceof RenderGroovy) {
+			RenderGroovy rj = (RenderGroovy) r;
+			String template = jsRoot + "/" + _module + "/" + _method + ".html";
+			renderTemplate(template, rj.args);
 		} else if (r instanceof Result) {
 			throw (Result) r;
 		} else if (r instanceof File) {
@@ -256,7 +256,7 @@ public class NashornController extends cn.bran.play.JapidController {
 	private static void processBeforeResult(String _module, String _method, Object r) {
 		if (r instanceof RenderJapid) {
 			RenderJapid rj = (RenderJapid) r;
-			renderJapidWith(jsRoot + "/" + _module + "/" + _method, rj.args);
+			JapidController.renderJapidWith(jsRoot + "/" + _module + "/" + _method, rj.args);
 		} else if (r instanceof Result) {
 			throw (Result) r;
 		} else if (r instanceof File) {
@@ -270,7 +270,7 @@ public class NashornController extends cn.bran.play.JapidController {
 		} else if (r instanceof java.sql.Date) {
 			renderJSON(((java.sql.Date) r).getTime());
 		} else if (r instanceof Undefined || r == null) {
-//			// fall through
+			// // fall through
 		} else if (r instanceof ScriptObjectMirror) {
 			ScriptObjectMirror som = (ScriptObjectMirror) r;
 			String className = som.getClassName();
@@ -357,14 +357,15 @@ public class NashornController extends cn.bran.play.JapidController {
 			_updateModelsHeader();
 			// is this too intrusive?
 			engine.getBindings(ScriptContext.ENGINE_SCOPE).clear();
-			
+
 			enableRequire(engine);
-			
+
 			loadModelDefs(engine);
 			// parse the header
 			// engine.eval(new FileReader(PLAY_HEADERS_JS));
 			// engine.eval("load('" + PLAY_HEADERS_JS + "');");
-			loadPlayHeaders(engine); //XXX error reporting not to be mixed with target action
+			loadPlayHeaders(engine); // XXX error reporting not to be mixed with
+										// target action
 
 			// remove old definition
 			engine.getBindings(ScriptContext.ENGINE_SCOPE).remove(moduleName);
@@ -467,7 +468,6 @@ public class NashornController extends cn.bran.play.JapidController {
 		}).toArray();
 	}
 
-
 	private static Object evaluate(ScriptEngine engine, Object url) throws ScriptException, FileNotFoundException {
 		final long start = System.currentTimeMillis();
 		try {
@@ -500,7 +500,7 @@ public class NashornController extends cn.bran.play.JapidController {
 			if (f != null)
 				return f;
 		}
-		
+
 		if (!shouldCoerceArg)
 			return e;
 
