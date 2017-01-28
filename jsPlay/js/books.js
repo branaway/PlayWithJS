@@ -88,10 +88,18 @@ var books = function() {
 		},
 		
 		/**
-		 * path: http://localhost:9000/js/books/getFile?name=/js/books.js
+		 * path: http://localhost:9000/js/books/getFile?name=js/books.js
 		 */
 		getFile : function(name) {
-			return new File(name)
+			return new File(name) // shortcut for showFile(...)
+		},
+		
+		
+		/**
+		 * path: http://localhost:9000/js/books/download?name=js/books.js
+		 */
+		download : function(name) {
+			return downloadFile(new File(name));
 		},
 		
 		/**

@@ -20,7 +20,8 @@ var RenderXml = Java.type("play.mvc.results.RenderXml");
 function renderXml(o) {return new RenderXml(o);}
 
 var RenderFile = Java.type("play.mvc.results.RenderBinary"); 
-function renderFile(o) {return new RenderFile(o);}
+function showFile(o) {return new RenderFile(o);} // inline
+function downloadFile(o) {return new RenderFile(o, o.name, false);} // attachment
 
 var Redirect = Java.type("play.mvc.results.Redirect"); 
 //function redirect(url, args) {
