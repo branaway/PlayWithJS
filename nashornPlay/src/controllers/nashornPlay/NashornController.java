@@ -257,6 +257,10 @@ public class NashornController extends Controller {
 		if (r instanceof RenderJapid) {
 			RenderJapid rj = (RenderJapid) r;
 			JapidController.renderJapidWith(jsRoot + "/" + _module + "/" + _method, rj.args);
+		} else if (r instanceof RenderGroovy) {
+			RenderGroovy rj = (RenderGroovy) r;
+			String template = jsRoot + "/" + _module + "/" + _method + ".html";
+			renderTemplate(template, rj.args);
 		} else if (r instanceof Result) {
 			throw (Result) r;
 		} else if (r instanceof File) {
