@@ -20,8 +20,25 @@ var RenderXml = Java.type("play.mvc.results.RenderXml");
 function renderXml(o) {return new RenderXml(o);}
 
 var RenderFile = Java.type("play.mvc.results.RenderBinary"); 
-function showFile(o) {return new RenderFile(o);} // inline
-function downloadFile(o) {return new RenderFile(o, o.name, false);} // attachment
+
+//inline file
+function showFile(o) {
+	if (typeof o == 'string')
+		return new RenderFile(new java.io.File(o));
+	else // assume java File object
+		return new RenderFile(o);
+} 
+
+// download a file
+function downloadFile(o) {
+	if (typeof o == 'string') {
+		var f = new java.io.File(o);
+		return new RenderFile(f, f.name, false);
+	}
+	else // assume java File object
+		return new RenderFile(o, o.name, false);
+}
+
 
 var Redirect = Java.type("play.mvc.results.Redirect"); 
 //function redirect(url, args) {

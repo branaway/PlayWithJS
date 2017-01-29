@@ -91,7 +91,9 @@ var books = function() {
 		 * path: http://localhost:9000/js/books/getFile?name=js/books.js
 		 */
 		getFile : function(name) {
-			return new File(name) // shortcut for showFile(...)
+			return new File(name) 
+			// or return showFile(new File(name))
+			// or return showFile(name)
 		},
 		
 		
@@ -99,7 +101,8 @@ var books = function() {
 		 * path: http://localhost:9000/js/books/download?name=js/books.js
 		 */
 		download : function(name) {
-			return downloadFile(new File(name));
+			return downloadFile(name);
+			// or return downloadFile(new File(name))
 		},
 		
 		/**

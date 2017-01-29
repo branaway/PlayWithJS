@@ -89,22 +89,19 @@ public class getBookById extends cn.bran.play.JapidTemplateBase
 ;// line 1, getBookById.html
 		p("<!DOCTYPE html>\n" + 
 "<html>\n" + 
-"<head>\n" + 
-"<meta charset=\"UTF-8\">\n" + 
-"</head>\n" + 
 "<body>\n" + 
-"    <p>error is: ");// line 1, getBookById.html
-		try { Object o = escape(errcode); if (o.toString().length() ==0) { p(escape(null)); } else { p(o); } } catch (NullPointerException npe) { p(escape(null)); }// line 9, getBookById.html
+"    <p>error code is: ");// line 1, getBookById.html
+		try { Object o = escape(errcode); if (o.toString().length() ==0) { p(escape(null)); } else { p(o); } } catch (NullPointerException npe) { p(escape(null)); }// line 6, getBookById.html
 		p(" </p>\n" + 
-"    <p>");// line 9, getBookById.html
-		try { Object o = escape(book.title); if (o.toString().length() ==0) { p(escape(null)); } else { p(o); } } catch (NullPointerException npe) { p(escape(null)); }// line 10, getBookById.html
-		p(", ");// line 10, getBookById.html
-		try { Object o = escape(book.year); if (o.toString().length() ==0) { p(escape(null)); } else { p(o); } } catch (NullPointerException npe) { p(escape(null)); }// line 10, getBookById.html
-		p(", ");// line 10, getBookById.html
-		try { Object o = escape(book.id); if (o.toString().length() ==0) { p(escape(null)); } else { p(o); } } catch (NullPointerException npe) { p(escape(null)); }// line 10, getBookById.html
+"    <p>");// line 6, getBookById.html
+		try { Object o = escape(book.title); if (o.toString().length() ==0) { p(escape(null)); } else { p(o); } } catch (NullPointerException npe) { p(escape(null)); }// line 7, getBookById.html
+		p(", ");// line 7, getBookById.html
+		try { Object o = escape(book.year); if (o.toString().length() ==0) { p(escape(null)); } else { p(o); } } catch (NullPointerException npe) { p(escape(null)); }// line 7, getBookById.html
+		p(", ");// line 7, getBookById.html
+		try { Object o = escape(book.id); if (o.toString().length() ==0) { p(escape(null)); } else { p(o); } } catch (NullPointerException npe) { p(escape(null)); }// line 7, getBookById.html
 		p("</p>\n" + 
 "</body>\n" + 
-"</html>");// line 10, getBookById.html
+"</html>");// line 7, getBookById.html
 		
 		endDoLayout(sourceTemplate);
 	}
