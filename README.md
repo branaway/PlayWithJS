@@ -275,12 +275,12 @@ The result would have been like below, where the full data content is returned, 
 
 ## Automatic variables available in the actions
 
-The following variables are automatically available in the actions. 
+The following functions/var are automatically available in the actions. 
 
-- request: the HTTP request
-- response: the HTTP response
-- flash: a short-lived storage that is available in one round of request/response. It can survive a redirect though.
-- session: cookie based storage for a browsing session
+- request(): the HTTP request
+- response(): the HTTP response
+- flash(): a short-lived storage that is available in one round of request/response. It can survive a redirect though.
+- session(): cookie based storage for a browsing session
 - params: the parameters associated with an HTTP request
 
 Study the following links for better understanding the above variables:

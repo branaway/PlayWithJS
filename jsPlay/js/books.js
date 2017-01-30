@@ -77,11 +77,8 @@ var books = function() {
 		 */
 		newBook2 : function (jsonData) {
 			var book = new Book();
-			var json = JSON.parse(jsonData)
-			for (var p in json) {
-				book[p] = json[p]
-			}
-
+			bindJson(jsonData, book);
+			
 			book.save();
 			
 			return book;
@@ -174,40 +171,13 @@ var books = function() {
 			return "OK";
 		},
 		
-		/**
-		 * login a user to display the login form, depending on the HTTP method
-		 * path: http://localhost:9000/js/books/login
-		 */
-		login: function(user_name, user_pwd){
-			if (request.method == "GET")
-				return new File("public/login.html")
-			else {
-				if (user_name) {
-					session.put("_user", user_name)
-					return "welcome: " + user_name
-				}
-				else {
-					return new File("public/login.html")
-				}
-			}
-		},
-	
-		/**
-		 * logout the current user
-		 * path: http://localhost:9000/js/books/logout
-		 */
-		logout: function(){
-			session.put("_user", "")
-			return "logout OK"
-		},
-		
 		
 		/**
 		 * upload a file
 		 * path: http://localhost:9000/js/books/upload
 		 */
 		upload: function(file, comment) {
-			if (request.method == "GET")
+			if (request().method == "GET")
 				return new File("public/upload.html")
 			else {
 				// the file should have been mapped to the upload
@@ -230,11 +200,10 @@ var books = function() {
 		 */
 		_before : function(functionName, args) {
 			if (functionName == "all") {
-				var u = session.get("_user")
+				var u = session().get("_user")
 				print("current user: " + u)
 				if (!u){
-					return redirect("books.login", {a: "1", b:"2"}) // note the redirect function use with some parameters
-//					return books.login() // note direct call
+					return redirect("auth.login", {a: "1", b:"2"}) // note the redirect function use with some parameters
 				}
 			}
 		}

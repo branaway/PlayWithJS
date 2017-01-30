@@ -1,5 +1,5 @@
 package controllers;
 
-public class JSController extends controllers.nashornPlay.NashornController {
+public class JSController extends controllers.nashornPlay.NashornController2 {
 
 }

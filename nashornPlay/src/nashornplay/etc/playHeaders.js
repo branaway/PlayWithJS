@@ -85,16 +85,16 @@ function renderJackson(o) {return new RenderJackson(o);}
 
 
 var Request = Java.type("play.mvc.Http.Request"); 
-var request = Request.current();
+function request() {return Request.current();}
 
 var Response = Java.type("play.mvc.Http.Response"); 
-var response = Response.current();
+function response() {return Response.current();}
 
 var Flash = Java.type("play.mvc.Scope.Flash"); 
-var flash = Flash.current();
+function flash() {return Flash.current();}
 
 var Session = Java.type("play.mvc.Scope.Session"); 
-var session = Session.current();
+function session() {return Session.current();}
 
 var JavaUtils = Java.type("nashornplay.etc.JavaUtils");
 var getUploadedFile = function(name) { return JavaUtils.bindFile(name)}
@@ -105,7 +105,7 @@ var redirect = function(target, args) {
 	return JavaUtils.redirect(target, args);
 }
 
-var params = request.params.data; // a Map object
+var params = request().params.data; // a Map object
 
 //
 var JPA = Java.type("play.db.jpa.JPA");
@@ -146,4 +146,22 @@ The JPAQuery offers a nice API:
  */
 
 // java
+
+/**
+ * bind a json string to java bean.
+ * 
+ * Note: no recursive binding yet.
+ * 
+ */
+function bindJson(jsonString, javabean) {
+	var json = jsonString
+	if (typeof jsonString == 'string')
+		var json = JSON.parse(jsonString)
+	for (var p in json) {
+		javabean[p] = json[p]
+	}
+	return javabean
+} 
+
+
 var File = Java.type("java.io.File");
