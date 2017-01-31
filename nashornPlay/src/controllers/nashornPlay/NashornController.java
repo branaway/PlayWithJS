@@ -6,12 +6,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import javax.script.ScriptContext;
@@ -51,12 +54,18 @@ import play.mvc.results.Result;
 import play.utils.Utils.AlternativeDateFormat;
 import play.vfs.VirtualFile;
 
+/**
+ * this version tries to use a single instance of engine to save memory
+ * 
+ * @author ran
+ *
+ */
 public class NashornController extends Controller {
 	public static String jsRoot = "js";
 	private static final String COMMONJS = jsRoot + "/commonjs";
 	private static final String _PARAMS = "_params";
 	private static boolean shouldCoerceArg = Boolean
-			.parseBoolean(Play.configuration.getProperty("jscontroller.coerce.args", "false"));
+			.parseBoolean(Play.configuration.getProperty("jscontroller.coerce.args", "true"));
 
 	static final String PLAY_HEADERS_JS = "/nashornplay/etc/playHeaders.js"; // resource
 																				// path
@@ -69,37 +78,32 @@ public class NashornController extends Controller {
 	// running
 	// application
 
-	private static ThreadLocal<String> modelHeaders = ThreadLocal.withInitial(() -> {
-		// return getModelsHeader();
-		return "";
-	});
-	private static ThreadLocal<Boolean> modelHeadersUpdated = ThreadLocal.withInitial(() -> Boolean.FALSE);
+	private static String modelHeaders = "";
 
-	private static ThreadLocal<ScriptEngine> engineHolder = ThreadLocal.withInitial(() -> {
-		// ScriptEngine engine = new
-		// ScriptEngineManager().getEngineByName("nashorn");
+	private static AtomicBoolean modelHeadersUpdated = new AtomicBoolean(false);
+
+	private static ScriptEngine engine;
+
+	private static ConcurrentHashMap<String, JSObject> modules = new ConcurrentHashMap<>();
+
+	static {
 		System.setProperty("nashorn.typeInfo.maxFiles", "20000");
 		String[] options = new String[] { "-ot=true", "--language=es6" };
-		ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine(options);
+		engine = new NashornScriptEngineFactory().getScriptEngine(options);
 		// enable the "require" plugin
 		// https://github.com/coveo/nashorn-commonjs-modules
 		enableRequire(engine);
-		if (Play.mode.isProd())
+		if (Play.mode.isProd()) {
 			try {
-				// engine.eval(new FileReader(PLAY_HEADERS_JS));
-				// engine.eval("load('" + PLAY_HEADERS_JS + "');");
 				loadPlayHeaders(engine);
-				// engine.eval(new FileReader(MODEL_HEADERS_JS));
+				_updateModelsHeader();
 				loadModelDefs(engine);
-
 			} catch (ScriptException e) {
 				e.printStackTrace();
 			}
-		// catch (IOException e) {
-		// e.printStackTrace();
-		// }
-		return engine;
-	});
+			// somehow should load all the module definitions
+		}
+	}
 
 	private static void enableRequire(ScriptEngine engine) {
 		FilesystemFolder rootFolder = FilesystemFolder.create(new File(COMMONJS), "UTF-8");
@@ -113,7 +117,7 @@ public class NashornController extends Controller {
 
 	private static void loadModelDefs(ScriptEngine engine) throws ScriptException {
 		play.Logger.debug("load model headers to Nashorn context");
-		engine.eval(modelHeaders.get());
+		engine.eval(modelHeaders);
 	}
 
 	private static void loadPlayHeaders(ScriptEngine engine) throws ScriptException {
@@ -139,7 +143,6 @@ public class NashornController extends Controller {
 		if (_method == null)
 			_method = "index";
 
-		ScriptEngine engine = engineHolder.get();
 		if (_module.endsWith(".js"))
 			_module += _module.substring(0, _module.lastIndexOf(".js"));
 		// get
@@ -297,21 +300,37 @@ public class NashornController extends Controller {
 		// jdk.nashorn.internal.scripts.Script$Recompilation$24$535A$\^eval\_.books$getBookById-1(<eval>:32)
 		List<StackTraceElement> goodLines = Arrays.stream(e.getStackTrace())
 				.filter(st -> st.toString().contains("scripts.Script$")).collect(Collectors.toList());
-		if (goodLines.size() > 0) {
-			StackTraceElement ste = goodLines.get(0);
+		for (StackTraceElement ste : goodLines) {
 			Integer lineNum = ste.getLineNumber();
 			String fname = ste.getFileName();
 			if ("<eval>".equals(fname)) {
-				fname = fileName;
+				// fname = fileName;
+				// there is a bug here. since user module is loaded by load()
+				// and should
+				// carry a file name. <eval> error could have been caused by
+				// playHeaders.js for example.
+				// let's try to be clear
+				if (goodLines.size() == 1) {
+					fname = "<eval>";
+					// return this
+					String tempName = fname;
+					VirtualFile vf = VirtualFile.fromRelativePath(tempName);
+					NashornExecutionException ce = new NashornExecutionException(vf, "\"" + e.getMessage() + "\"",
+							lineNum, 0, 0);
+					throw ce;
+				} else {
+					// go to the next iteration
+				}
+			} else {
+				// return this
+				String tempName = fname;
+				VirtualFile vf = VirtualFile.fromRelativePath(tempName);
+				NashornExecutionException ce = new NashornExecutionException(vf, "\"" + e.getMessage() + "\"", lineNum,
+						0, 0);
+				throw ce;
 			}
-			String tempName = fname;
-			VirtualFile vf = VirtualFile.fromRelativePath(tempName);
-			NashornExecutionException ce = new NashornExecutionException(vf, "\"" + e.getMessage() + "\"", lineNum, 0,
-					0);
-			throw ce;
-		} else {
-			throw e;
 		}
+		throw e;
 	}
 
 	private static void convertToPlayCompilationError(String fileName, NashornException e) {
@@ -361,6 +380,8 @@ public class NashornController extends Controller {
 			_updateModelsHeader();
 			// is this too intrusive?
 			engine.getBindings(ScriptContext.ENGINE_SCOPE).clear();
+			// engine.getBindings(ScriptContext.ENGINE_SCOPE).remove(moduleName);
+			modules.clear();
 
 			enableRequire(engine);
 
@@ -372,7 +393,6 @@ public class NashornController extends Controller {
 										// target action
 
 			// remove old definition
-			engine.getBindings(ScriptContext.ENGINE_SCOPE).remove(moduleName);
 
 			evaluate(engine, rawFile);
 
@@ -388,26 +408,37 @@ public class NashornController extends Controller {
 				}
 				return null; // to fool the compiler
 			} else {
-				return parserModule(moduleName, engine);
+				// parse the function parameters
+				extractMethodInfo(moduleName, engine, module);
+				modules.put(moduleName, module);
+
+				return module;
 			}
 
 		} else { // production mode
-			if (!modelHeadersUpdated.get()) {
-				_updateModelsHeader();
-				loadModelDefs(engine);
-			}
-
-			JSObject module = (JSObject) engine.get(moduleName);
+			JSObject module = modules.get(moduleName);
 			if (module == null) {
-				evaluate(engine, rawFile);
-				module = parserModule(moduleName, engine);
+				synchronized (engine) {
+					module = modules.get(moduleName);
+					if (module == null) { // double check
+						evaluate(engine, rawFile);
+						module = (JSObject) engine.get(moduleName);
+						if (module == null) {
+							notFound("the module is not defined" + moduleName);
+						} else {
+							// parse the function parameters
+							extractMethodInfo(moduleName, engine, module);
+							modules.put(moduleName, module);
+						}
+					}
+				}
 			}
 			return module;
 		}
 	}
 
 	private static void _updateModelsHeader() {
-		modelHeaders.set(getModelsHeader());
+		modelHeaders = getModelsHeader();
 		modelHeadersUpdated.set(true);
 	}
 
@@ -476,7 +507,6 @@ public class NashornController extends Controller {
 		final long start = System.currentTimeMillis();
 		try {
 			if (url instanceof File) {
-				// return engine.eval(new FileReader((File) url));
 				return engine.eval("load('" + ((File) url).getPath() + "');");
 			} else if (url instanceof String) {
 				return engine.eval((String) url);
@@ -514,25 +544,54 @@ public class NashornController extends Controller {
 		}
 
 		if (e.startsWith("\'") && e.endsWith("\'")) {
+			// '...' is considered as a opaque string
 			return e.substring(1, e.length() - 1);
 		}
 
 		if ("null".equals(e)) {
 			return null;
+		} else if ("true".equalsIgnoreCase(e)) {
+			return Boolean.TRUE;
+		} else if ("false".equalsIgnoreCase(e)) {
+			return Boolean.FALSE;
 		} else if (NumberUtils.isNumber(e)) {
 			return NumberUtils.createNumber(e);
 		} else {
+			String trimmed = e.trim();
+			if (trimmed.startsWith("{") && trimmed.endsWith("}") || trimmed.startsWith("[") && trimmed.endsWith("]")) {
+				// perhaps a JSON?
+				try {
+					ScriptObjectMirror som = (ScriptObjectMirror) engine.eval("JSON.parse('" + trimmed + "')");
+					// let's further coerce json properties.
+					coerceJSON(som);
+					return som;
+				} catch (Exception ex) {
+					// not a JSON, let fall thru
+					PrintStream out = System.out;
+				}
+			}
+
 			try {
 				java.util.Date d = AlternativeDateFormat.getDefaultFormatter().parse(e);
 				return d;
 			} catch (ParseException e1) {
 				// ok not a date
-				if ("true".equalsIgnoreCase(e)) {
-					return Boolean.TRUE;
-				} else if ("false".equalsIgnoreCase(e)) {
-					return Boolean.FALSE;
-				} else
-					return e;
+			}
+
+			return e;
+		}
+	}
+
+	private static void coerceJSON(ScriptObjectMirror som) {
+		Set<String> keys = som.keySet();
+		for (String k : keys) {
+			Object p = som.get(k);
+			if (p instanceof String) {
+				p = coerceArg((String) p);
+				som.put(k, p);
+			}
+			else if (p instanceof ScriptObjectMirror) {
+				coerceJSON((ScriptObjectMirror) p);
 			}
 		}
 	}

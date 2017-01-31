@@ -13,6 +13,7 @@ var contacts = function() {
 		 */
 		all : function() {
 			var contacts = Contact.find("order by birthdate", []).fetch();
+			contacts.forEach(function(c){print(c.birthdate)})
 			return contacts;
 		},
 
@@ -48,16 +49,20 @@ var contacts = function() {
 		},
 		
 		/**
-		 * path: http://localhost:9000/js/contacts/newContact?title=My Contact&year=1966
+		 * path: http://localhost:9000/js/contacts/newContact?name=Mario&birthdate=1966-10-07
 		 * or use curl: curl --form title="My Contact" --form year="1966" http://localhost:9000/js/contacts/newContact
 		 */
-		newContact : function (title, year) {
+		newContact : function (name, birthdate) {
 			var contact = new Contact();
-			if (title)
-				contact['title'] = title; // set on an attribute
-			if (year)
-				contact.year = year; // as direct javabean
+			if (name)
+				contact['name'] = name; 
+			if (birthdate) {
+				print(birthdate.class + ":" + birthdate)
+				contact.birthdate = birthdate; 
+			}
 
+			print(contact.birthdate)
+			
 			contact.save();
 
 			return contact;
@@ -65,13 +70,14 @@ var contacts = function() {
 		
 		/**
 		 * sample path: 
-		 * http://localhost:9000/js/contacts/newContact2?jsonData={"title":"my contact", "year":1999}
+		 * http://localhost:9000/js/contacts/newContact2?jsonData={"name":"Mario", "birthdate":"1999-01-20"}
 		 * or use curl: curl --form title="My Contact" --form year="1966" http://localhost:9000/js/contacts/newContact
 		 */
 		newContact2 : function (jsonData) {
-			var contact = new Contact();
-			bindJson(jsonData, contact);
+			print(jsonData.name)
+			print(jsonData.birthdate)
 			
+			var contact = bindJson(jsonData, new Contact());
 			contact.save();
 			
 			return contact;

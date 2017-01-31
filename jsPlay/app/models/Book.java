@@ -26,7 +26,7 @@ public class Book extends Model {
     public Contact author;
     
     // optional fields
-    public Integer votes;
+    public Long votes;
     public Integer rank;
     public Float rating = 6.0f;
     

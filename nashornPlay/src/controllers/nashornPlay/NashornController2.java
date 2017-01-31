@@ -12,7 +12,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import javax.script.ScriptContext;
@@ -53,9 +52,9 @@ import play.utils.Utils.AlternativeDateFormat;
 import play.vfs.VirtualFile;
 
 /**
- * this version tries to use a single instance of engine to save memory
  * 
  * @author ran
+ * @deprecated because a new instance of engine is created for each thread, which would consume a lot of memory
  *
  */
 public class NashornController2 extends Controller {
@@ -76,30 +75,37 @@ public class NashornController2 extends Controller {
 	// running
 	// application
 
-	private static String modelHeaders = "";
+	private static ThreadLocal<String> modelHeaders = ThreadLocal.withInitial(() -> {
+		// return getModelsHeader();
+		return "";
+	});
+	private static ThreadLocal<Boolean> modelHeadersUpdated = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-	private static AtomicBoolean modelHeadersUpdated = new AtomicBoolean(false);
-
-	private static ScriptEngine engine;
-
-	static {
+	private static ThreadLocal<ScriptEngine> engineHolder = ThreadLocal.withInitial(() -> {
+		// ScriptEngine engine = new
+		// ScriptEngineManager().getEngineByName("nashorn");
 		System.setProperty("nashorn.typeInfo.maxFiles", "20000");
 		String[] options = new String[] { "-ot=true", "--language=es6" };
-		engine = new NashornScriptEngineFactory().getScriptEngine(options);
+		ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine(options);
 		// enable the "require" plugin
 		// https://github.com/coveo/nashorn-commonjs-modules
 		enableRequire(engine);
-		if (Play.mode.isProd()) {
+		if (Play.mode.isProd())
 			try {
+				// engine.eval(new FileReader(PLAY_HEADERS_JS));
+				// engine.eval("load('" + PLAY_HEADERS_JS + "');");
 				loadPlayHeaders(engine);
-				_updateModelsHeader();
+				// engine.eval(new FileReader(MODEL_HEADERS_JS));
 				loadModelDefs(engine);
+
 			} catch (ScriptException e) {
 				e.printStackTrace();
 			}
-			// somehow should load all the module definitions
-		}
-	}
+		// catch (IOException e) {
+		// e.printStackTrace();
+		// }
+		return engine;
+	});
 
 	private static void enableRequire(ScriptEngine engine) {
 		FilesystemFolder rootFolder = FilesystemFolder.create(new File(COMMONJS), "UTF-8");
@@ -113,7 +119,7 @@ public class NashornController2 extends Controller {
 
 	private static void loadModelDefs(ScriptEngine engine) throws ScriptException {
 		play.Logger.debug("load model headers to Nashorn context");
-		engine.eval(modelHeaders);
+		engine.eval(modelHeaders.get());
 	}
 
 	private static void loadPlayHeaders(ScriptEngine engine) throws ScriptException {
@@ -139,6 +145,7 @@ public class NashornController2 extends Controller {
 		if (_method == null)
 			_method = "index";
 
+		ScriptEngine engine = engineHolder.get();
 		if (_module.endsWith(".js"))
 			_module += _module.substring(0, _module.lastIndexOf(".js"));
 		// get
@@ -392,28 +399,21 @@ public class NashornController2 extends Controller {
 
 		} else { // production mode
 			if (!modelHeadersUpdated.get()) {
-				synchronized (engine) {
-					_updateModelsHeader();
-					loadModelDefs(engine);
-				}
+				_updateModelsHeader();
+				loadModelDefs(engine);
 			}
 
 			JSObject module = (JSObject) engine.get(moduleName);
 			if (module == null) {
-				synchronized (engine) {
-					module = (JSObject) engine.get(moduleName);
-					if (module == null) { // double check
-						evaluate(engine, rawFile);
-						module = parserModule(moduleName, engine);
-					}
-				}
+				evaluate(engine, rawFile);
+				module = parserModule(moduleName, engine);
 			}
 			return module;
 		}
 	}
 
 	private static void _updateModelsHeader() {
-		modelHeaders = getModelsHeader();
+		modelHeaders.set(getModelsHeader());
 		modelHeadersUpdated.set(true);
 	}
 
@@ -482,6 +482,7 @@ public class NashornController2 extends Controller {
 		final long start = System.currentTimeMillis();
 		try {
 			if (url instanceof File) {
+				// return engine.eval(new FileReader((File) url));
 				return engine.eval("load('" + ((File) url).getPath() + "');");
 			} else if (url instanceof String) {
 				return engine.eval((String) url);
